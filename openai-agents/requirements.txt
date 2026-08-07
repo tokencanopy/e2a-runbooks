@@ -1,0 +1,6 @@
+# Pinned to the latest published versions as of 2026-08-07.
+openai-agents~=0.19.4
+e2a~=5.6.0
+fastapi~=0.141.1
+uvicorn[standard]~=0.52.1
+python-dotenv~=1.2.2

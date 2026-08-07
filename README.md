@@ -9,17 +9,25 @@ e2a gives an AI agent a **real email address**: verified inbound mail over signe
 | Runbook | Framework | What it shows |
 | --- | --- | --- |
 | [`mastra/`](./mastra) | [Mastra](https://mastra.ai) | An agent that owns an inbox — signed webhook → verified inbound → in-thread reply, with SPF/DKIM/DMARC provenance passed to the model |
+| [`openai-agents/`](./openai-agents) | [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) | The same shape in ~100 lines of Python: FastAPI webhook, `Runner.run_sync`, `email.reply()` |
 
-More frameworks to come. Each lives in its own directory with its own `package.json` and pinned framework version, so one framework's churn never breaks another.
+The `mastra/` runbook is the fully-worked reference — same core, plus tests, structured tool errors, and the outbound approval path. The others are deliberately minimal.
+
+More frameworks to come (Anthropic Claude Agent SDK, LangChain, Google ADK). Each lives in its own directory with its own dependency manifest and pinned SDK versions, so one framework's churn never breaks another.
 
 ## Using one
 
 ```bash
 git clone https://github.com/tokencanopy/e2a-runbooks
-cd e2a-runbooks/mastra
-npm install
-cp .env.example .env    # fill in four values
-npm run dev
+
+# TypeScript runbooks
+cd e2a-runbooks/mastra && npm install && cp .env.example .env && npm run dev
+
+# Python runbooks
+cd e2a-runbooks/openai-agents
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && cp .env.example .env
+uvicorn app:app --port 8000
 ```
 
 Each runbook's README carries its own quickstart, configuration table, and deployment notes.
@@ -38,15 +46,17 @@ Reading an API reference tells you which calls exist. It doesn't tell you the th
 
 Each runbook:
 
-- is a standalone project — its own `package.json`, its own lockfile, its own pinned framework version;
+- is a standalone project — its own dependency manifest, its own pinned SDK versions, verified against the latest published releases;
 - reads all configuration from the environment, with a documented `.env.example`;
-- separates transport from logic, so the webhook handler is testable without a server, an API key, or a live inbox;
-- ships tests for the paths worth locking — signature rejection, event filtering, and duplicate suppression;
+- verifies the webhook signature on raw bytes, filters to `email.received`, and replies in-thread;
+- passes the SPF/DKIM/DMARC verdict into the prompt and instructs the agent to treat message bodies as data;
 - uses only synthetic addresses (`example.com`, `agents.localhost`, `.example`). No real inboxes, customers, or keys.
+
+The reference runbook (`mastra/`) goes further: transport separated from logic so the handler is testable without a server or credentials, tests covering signature rejection / event filtering / duplicate suppression, structured tool errors, and the outbound approval path. The minimal runbooks stay one file and say what they simplified.
 
 ## Contributing
 
-Adding a runbook is a directory, not a repo. Follow the conventions above, make `npm run typecheck`, `npm test`, and the framework's own build pass, and add a row to the table.
+Adding a runbook is a directory, not a repo. Follow the conventions above, verify every SDK symbol against the installed package rather than from memory, pin to the latest published version, and add a row to the table.
 
 ## License
 
