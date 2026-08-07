@@ -6,14 +6,14 @@ e2a gives an AI agent a **real email address**: verified inbound mail over signe
 
 ## Runbooks
 
-| Runbook | Framework | What it shows |
-| --- | --- | --- |
-| [`mastra/`](./mastra) | [Mastra](https://mastra.ai) | An agent that owns an inbox — signed webhook → verified inbound → in-thread reply, with SPF/DKIM/DMARC provenance passed to the model |
-| [`openai-agents/`](./openai-agents) | [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) | The same shape in ~100 lines of Python: FastAPI webhook, `Runner.run_sync`, `email.reply()` |
+| Runbook | Agent | Framework | e2a surface it exercises |
+| --- | --- | --- | --- |
+| [`mastra/`](./mastra) | **Support agent** — answers in-thread, with an approval gate before it sends | [Mastra](https://mastra.ai) — built-in server, memory, HITL primitives | Threading, memory, `reviews` |
+| [`openai-agents/`](./openai-agents) | **Receptionist** — answers what it can, forwards the rest to the right desk | [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) — handoffs are first-class here | `forward`, `update_labels` |
 
 The `mastra/` runbook is the fully-worked reference — same core, plus tests, structured tool errors, and the outbound approval path. The others are deliberately minimal.
 
-More frameworks to come (Anthropic Claude Agent SDK, LangChain, Google ADK). Each lives in its own directory with its own dependency manifest and pinned SDK versions, so one framework's churn never breaks another.
+Planned: **contract/document review** on LangChain (`attachments`), **AI SRE** on the Claude Agent SDK (verification-as-gate, `reviews`), and a **scheduling secretary** on Pydantic AI (`conversations`). Each pairs a use case with the framework that suits it, and each exercises an e2a surface the others don't. Each lives in its own directory with its own dependency manifest and pinned SDK versions, so one framework's churn never breaks another.
 
 ## Using one
 

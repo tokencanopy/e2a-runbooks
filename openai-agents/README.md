@@ -1,8 +1,10 @@
-# OpenAI Agents SDK + e2a — an agent with its own inbox
+# OpenAI Agents SDK + e2a — a receptionist agent
 
-An [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) agent that owns a real email address, powered by [e2a](https://e2a.dev).
+A **receptionist** built with the [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/), with its own email address via [e2a](https://e2a.dev).
 
-One file. Inbound mail arrives as a signature-verified webhook, the agent answers, and the reply goes back in-thread.
+It answers what it can, **forwards what it can't to the right desk**, and labels everything on the way through. One file.
+
+Handoffs are a first-class idea in this SDK, which is why the receptionist lives here — routing to a human is the same shape as routing to another agent.
 
 ## Quickstart
 
@@ -40,7 +42,9 @@ someone@example.com ──email──▶ e2a ──signed webhook──▶ POST 
                                                           construct_event   verify raw bytes
                                                           event.type check  only email.received
                                                           from_event        hydrate InboundEmail
-                                                          Runner.run_sync   agent answers
+                                                          Runner.run_sync   agent decides
+                                                          label_message     update_labels
+                                                          forward_to_desk   email.forward (if human needed)
                                                           email.reply       in-thread
 ```
 
@@ -54,12 +58,23 @@ Four things in `app.py` are load-bearing, and they are the same in every runbook
 
 **`email.reply()` keeps the thread.** e2a sets `In-Reply-To`/`References`. A fresh `send` with a matching subject starts a parallel thread instead.
 
+## The desk allowlist is the security boundary
+
+`forward_to_desk` takes a **desk name, not an address**, and resolves it against `DESKS`. A model that has been talked into forwarding your inbox to `attacker@evil.example` cannot do it — there is no argument that expresses it. Prompt instructions alone would not be enough; this is enforced in code, and it has a test:
+
+```python
+_forward_to_desk("attacker@evil.example", "n")  # -> "unknown desk ..." , no API call
+```
+
+The tools also act on **the message currently being handled**, not on a message id supplied by the model, so a confused agent cannot forward some *other* message out of the inbox.
+
 ## Simplifications worth knowing
 
 This runbook is deliberately minimal. Two shortcuts to fix before production:
 
 - **Duplicate suppression is an in-memory `set`.** Webhook delivery is at-least-once, so events are claimed by id before the agent runs — but that state dies with the process and is not shared across instances. Back it with a unique insert on the event id.
 - **No outbound approval.** e2a can hold an agent's outbound mail for human review per agent; this runbook sends directly. See the [`mastra/`](../mastra) runbook, which surfaces the queued-for-approval status to the model.
+- **`DESKS` is hardcoded.** Edit it for your organisation. The addresses shipped here are non-routable `.example` ones.
 
 The `mastra/` runbook is the fully-worked reference — it has the same core with tests, structured tool errors, and the approval path.
 
