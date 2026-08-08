@@ -12,10 +12,13 @@ e2a gives an AI agent a **real email address**: verified inbound mail over signe
 | [`openai-agents/`](./openai-agents) | **Receptionist** — answers what it can, forwards the rest to the right desk | [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) — handoffs are first-class here | `forward`, `update_labels` |
 | [`claude-agent-sdk/`](./claude-agent-sdk) | **AI SRE** — triages monitoring alerts, recommends, never acts | [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk) — the ops/coding agent SDK | Verification-as-gate, `reviews` (account-scoped) |
 | [`langchain/`](./langchain) | **Contract review** — reads an emailed PDF, replies with a structured risk summary | [LangChain v1](https://docs.langchain.com) — document work is its origin | `attachments`, `get_attachment` |
+| [`crewai/`](./crewai) | **Escalation desk** — a crew triages, investigates, and answers *from the specialist's own inbox* | [CrewAI](https://docs.crewai.com) — multi-agent crews, so multiple identities make sense | Multiple agents, cross-identity `conversation_id` |
 
 The `mastra/` runbook is the fully-worked reference — same core, plus tests, structured tool errors, and the outbound approval path. The others are deliberately minimal.
 
-Planned: a **scheduling secretary** on Pydantic AI (`conversations`). Each pairs a use case with the framework that suits it, and each exercises an e2a surface the others don't. Each lives in its own directory with its own dependency manifest and pinned SDK versions, so one framework's churn never breaks another.
+Each pairs a use case with the framework that suits it, and each exercises an e2a surface the others don't. Each lives in its own directory with its own dependency manifest and pinned SDK versions, so one framework's churn never breaks another.
+
+Planned: a **scheduling secretary** on [Pydantic AI](https://ai.pydantic.dev), reconstructing a multi-turn negotiation from `conversations` rather than from local state.
 
 ## Using one
 
@@ -32,7 +35,7 @@ pip install -r requirements.txt && cp .env.example .env
 uvicorn app:app --port 8000
 ```
 
-Each runbook's README carries its own quickstart, configuration table, and deployment notes.
+Each runbook's README carries its own quickstart, configuration table, and deployment notes. One caveat worth knowing up front: **`crewai/` needs Python `<3.14`** — CrewAI 1.x declares that upper bound and will not install on 3.14. The other Python runbooks have no upper bound.
 
 ## What these are for
 

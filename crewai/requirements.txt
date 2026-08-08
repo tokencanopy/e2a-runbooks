@@ -1,0 +1,11 @@
+# CrewAI 1.x requires Python >=3.10,<3.14 — it will not install on 3.14.
+#
+# The [anthropic] extra is required for `anthropic/…`, `claude-…` and `claude/…`
+# model strings: CrewAI's native Anthropic provider is not installed by default
+# and raises ImportError without it. OpenAI models need no extra (CrewAI already
+# depends on `openai`); for Gemini use crewai[google-genai].
+crewai[anthropic]==1.15.13
+e2a==5.6.0
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+python-dotenv==1.2.2
