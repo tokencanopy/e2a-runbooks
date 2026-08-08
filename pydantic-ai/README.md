@@ -4,6 +4,8 @@ A scheduling secretary built with [Pydantic AI](https://ai.pydantic.dev), with i
 
 Someone emails asking to meet. The agent proposes times, reads counter-proposals, and confirms — over as many round-trips as it takes. **It stores nothing.** On every webhook it rebuilds the negotiation from the e2a conversation.
 
+> **An example, not a product.** This is one of the [e2a runbooks](../README.md) — a small demonstration of what you can build with e2a. See [*Simplifications worth knowing*](#simplifications-worth-knowing) at the end for what it deliberately leaves out.
+
 Scheduling is the clearest case where one email isn't enough context: *"Tuesday doesn't work, how about Thursday?"* is meaningless without the thread. And Pydantic AI is the right framework for it precisely because it **has no session store** — so the conversation is genuinely the state, not a cache in front of one.
 
 ## The e2a surface: `conversations`

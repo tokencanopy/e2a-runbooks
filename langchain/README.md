@@ -4,6 +4,8 @@ A contract review agent built with [LangChain v1](https://docs.langchain.com), w
 
 Someone emails a contract as a PDF. The agent fetches the attachment, extracts the text, reviews it, and replies in-thread with a **structured** risk summary — severity-ranked clauses, expected-but-absent terms, and a recommendation.
 
+> **An example, not a product.** This is one of the [e2a runbooks](../README.md) — a small demonstration of what you can build with e2a. See [*Simplifications worth knowing*](#simplifications-worth-knowing) at the end for what it deliberately leaves out.
+
 Document work is LangChain's origin, which is why the review agent lives here. It uses v1's `create_agent` with a typed `response_format`, so the review is a validated Pydantic object rather than prose the caller has to parse.
 
 ## The attachment path is the point

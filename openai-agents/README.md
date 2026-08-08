@@ -4,6 +4,8 @@ A **receptionist** built with the [OpenAI Agents SDK](https://openai.github.io/o
 
 It answers what it can, **forwards what it can't to the right desk**, and labels everything on the way through. One file.
 
+> **An example, not a product.** This is one of the [e2a runbooks](../README.md) — a small demonstration of what you can build with e2a. See [*Simplifications worth knowing*](#simplifications-worth-knowing) at the end for what it deliberately leaves out.
+
 Handoffs are a first-class idea in this SDK, which is why the receptionist lives here — routing to a human is the same shape as routing to another agent.
 
 ## Quickstart

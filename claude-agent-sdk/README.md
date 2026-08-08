@@ -4,6 +4,8 @@ An SRE triage agent built with the [Claude Agent SDK](https://code.claude.com/do
 
 Monitoring systems email alerts to the agent. It triages them and drafts a recommendation for the on-call engineer. **It never touches infrastructure.**
 
+> **An example, not a product.** This is one of the [e2a runbooks](../README.md) — a small demonstration of what you can build with e2a. See [*Simplifications worth knowing*](#simplifications-worth-knowing) at the end for what it deliberately leaves out.
+
 That last sentence is the point of this runbook — and it is enforced twice, in code and in infrastructure, not in a prompt.
 
 ## Why an SRE agent, and why it's safe

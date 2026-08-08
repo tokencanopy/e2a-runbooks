@@ -4,6 +4,8 @@ A support escalation desk built with [CrewAI](https://docs.crewai.com), using **
 
 A customer emails the front desk. A three-role crew triages the request, investigates it, and drafts a reply — and the reply is sent **from the desk that owns the issue**, not from the front desk. The customer's follow-up then lands in that specialist's own inbox, where it skips triage entirely.
 
+> **An example, not a product.** This is one of the [e2a runbooks](../README.md) — a small demonstration of what you can build with e2a. See [*Simplifications worth knowing*](#simplifications-worth-knowing) at the end for what it deliberately leaves out.
+
 CrewAI is the multi-agent framework, so this is the runbook where multiple *identities* make sense. Every other runbook here has one agent with one address.
 
 ## The e2a surface: several agents, one conversation

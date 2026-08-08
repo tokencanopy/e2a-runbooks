@@ -4,6 +4,8 @@ A deployable [Mastra](https://mastra.ai) agent that owns a real email address, p
 
 People email the agent directly. Inbound mail arrives as a **signature-verified webhook**, the agent replies **in-thread**, and SPF/DKIM/DMARC results are passed to the model so unauthenticated senders are treated as untrusted.
 
+> **An example, not a product.** This is the reference runbook in the [e2a runbooks](../README.md) collection — the fully-worked one, with tests and the outbound approval path. It still cuts corners a production service would not (in-memory deduplication, single instance); see *What's in here* below.
+
 ```
 someone@example.com  ──email──▶  e2a  ──webhook (signed)──▶  Mastra agent
                      ◀──reply in-thread──────────────────────┘

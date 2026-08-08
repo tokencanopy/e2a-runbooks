@@ -1,8 +1,10 @@
 # e2a runbooks
 
-Deployable reference agents that use [e2a](https://e2a.dev) — one per framework. Each runbook is a complete project you can clone, configure with four environment variables, and run.
+**Example agents that show what you can build with [e2a](https://e2a.dev)** — one per framework. Each is a small, complete, runnable project: clone it, fill in a `.env`, point a webhook at it, and email it.
 
-e2a gives an AI agent a **real email address**: verified inbound mail over signed webhooks, replies that stay in-thread, and a human approval gate before the agent sends anything.
+e2a gives an AI agent a **real email address**: verified inbound mail over signed webhooks, replies that stay in-thread, and a human approval gate before the agent sends anything. These six demonstrate six different things you can do with that.
+
+> **These are examples, not products.** Each one is deliberately small enough to read in a sitting, and each README ends with a *Simplifications worth knowing* section listing exactly what it leaves out — in-memory deduplication, hardcoded routing tables, no OCR, no calendar. Copy from them; don't deploy them as-is.
 
 ## Runbooks
 
@@ -38,7 +40,7 @@ Each runbook's README carries its own quickstart, configuration table, and deplo
 
 ## What these are for
 
-Reading an API reference tells you which calls exist. It doesn't tell you the things that actually break an email agent in production, which is what these encode:
+Reading an API reference tells you which calls exist. It doesn't tell you the things that actually break an email agent, which is what these examples encode — each was driven end-to-end against a stand-in e2a API before being published, and every lesson below is one that broke a runbook first:
 
 - **Verify the signature on raw bytes.** Parse first and re-serialize and the HMAC will not match.
 - **In an `async` handler, use the async client.** The sync `E2AClient` raises `RuntimeError` when called from inside a running event loop, so a sync client in an `async def` webhook fails on the *first* inbound email — not later, under load. The Python runbooks use `AsyncE2AClient` and await every call. The same applies to your agent framework's runner: `Runner.run_sync()` and `Crew.kickoff()` block or raise inside a loop; use `Runner.run()` and `kickoff_async()`.
