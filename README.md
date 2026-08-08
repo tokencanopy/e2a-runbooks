@@ -41,6 +41,7 @@ Each runbook's README carries its own quickstart, configuration table, and deplo
 Reading an API reference tells you which calls exist. It doesn't tell you the things that actually break an email agent in production, which is what these encode:
 
 - **Verify the signature on raw bytes.** Parse first and re-serialize and the HMAC will not match.
+- **In an `async` handler, use the async client.** The sync `E2AClient` raises `RuntimeError` when called from inside a running event loop, so a sync client in an `async def` webhook fails on the *first* inbound email — not later, under load. The Python runbooks use `AsyncE2AClient` and await every call. The same applies to your agent framework's runner: `Runner.run_sync()` and `Crew.kickoff()` block or raise inside a loop; use `Runner.run()` and `kickoff_async()`.
 - **Only inbound mail should wake the agent.** e2a emits the full lifecycle; without a guard, your own delivery receipt triggers a reply, which produces another receipt.
 - **Webhook delivery is at-least-once.** Claim the event id *before* running the agent — the failure being prevented is a second reply in someone's inbox.
 - **Inbound email is untrusted input.** Pass the authentication verdict to the model and instruct it to treat message bodies as data, not instructions. An agent with an inbox and no provenance is a prompt-injection surface.

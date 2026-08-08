@@ -18,13 +18,14 @@ Then point an e2a webhook (email.received) at POST /webhooks/e2a.
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 
 load_dotenv()  # read .env before anything reads os.environ
 
 from claude_agent_sdk import AssistantMessage, ClaudeAgentOptions, TextBlock, query
-from e2a import E2AClient, E2AWebhookSignatureError, construct_event
+from e2a import AsyncE2AClient, E2AWebhookSignatureError, construct_event
 from fastapi import FastAPI, HTTPException, Request
 
 AGENT_EMAIL = os.environ["E2A_AGENT_EMAIL"]
@@ -32,7 +33,18 @@ WEBHOOK_SECRET = os.environ["E2A_WEBHOOK_SECRET"]
 ONCALL = os.environ.get("ONCALL_EMAIL", "oncall@your-domain.example")
 
 # Reads E2A_API_KEY (and E2A_API_URL if you self-host) from the environment.
-e2a = E2AClient()
+#
+# The ASYNC client, because the webhook handler is `async def`. The sync
+# E2AClient raises RuntimeError when called from inside a running event loop, so
+# a server pairing the two fails on its first inbound email. Every e2a call
+# below is awaited.
+e2a = AsyncE2AClient()
+
+# The async client owns a connection pool; close it on shutdown.
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    yield
+    await e2a.aclose()
 
 # Only these senders can cause a triage. Email is trivially spoofable, so an
 # allowlist alone is not enough — see the `verified` check in `triage_gate`.
@@ -52,6 +64,7 @@ For each alert, produce exactly these sections:
 - IF THIS IS A FALSE POSITIVE: what would indicate that.
 
 Rules:
+- This is sent as a plain-text email. Write the section names in plain capitals exactly as listed above. No markdown, no asterisks, no backticks — in a mail client they render as literal characters, not formatting.
 - You have no tools and no access to any system. You cannot inspect, restart, scale, deploy, or roll back anything. Never claim to have done so, and never imply an action is already underway.
 - RECOMMENDED ACTION is a recommendation for a human, not something you are doing. Write it in the imperative for them ("Check the connection pool saturation"), never in the first person ("I'll check...").
 - Do not invent metric values, log lines, timestamps, or dashboards. If the alert does not contain a number, do not state a number.
@@ -73,7 +86,7 @@ AGENT_OPTIONS = ClaudeAgentOptions(
     max_turns=1,
 )
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 # Webhook delivery is at-least-once. Paging on-call twice for one alert is the
 # visible failure. In-memory is fine for one instance; back it with a unique
@@ -143,13 +156,13 @@ async def inbound(request: Request) -> dict[str, object]:
         return {"status": "duplicate", "event_id": event.id}
     _seen.add(event.id)
 
-    email = e2a.inbound.from_event(event)
+    email = await e2a.inbound.from_event(event)
 
     refusal = triage_gate(email)
     if refusal:
         # Do not run the agent on mail we cannot attribute. Reply in-thread so
         # there is a record, and stop.
-        email.reply({"text": f"Not triaged: {refusal}. No action taken."})
+        await email.reply({"text": f"Not triaged: {refusal}. No action taken."})
         return {"status": "refused", "reason": refusal, "message_id": email.id}
 
     note = await triage(email)
@@ -158,7 +171,7 @@ async def inbound(request: Request) -> dict[str, object]:
     # alert thread belongs to the monitoring system. With outbound protection
     # enabled this returns a pending review rather than delivering, and e2a
     # emails the on-call human, who approves it.
-    result = e2a.messages.send(
+    result = await e2a.messages.send(
         AGENT_EMAIL,
         {
             "to": [ONCALL],

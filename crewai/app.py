@@ -22,7 +22,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # read .env before anything reads os.environ
 
-from e2a import E2AClient, E2AWebhookSignatureError, construct_event
+from e2a import AsyncE2AClient, E2AWebhookSignatureError, construct_event
 from fastapi import FastAPI, HTTPException, Request
 
 from crew import Triage, build_crew
@@ -30,7 +30,12 @@ from crew import Triage, build_crew
 log = logging.getLogger("escalation-desk")
 
 # Reads E2A_API_KEY (and E2A_API_URL if you self-host) from the environment.
-e2a = E2AClient()
+#
+# The ASYNC client, because the webhook handler is `async def`. The sync
+# E2AClient raises RuntimeError when called from inside a running event loop, so
+# a server pairing the two fails on its first inbound email. Every e2a call
+# below is awaited.
+e2a = AsyncE2AClient()
 
 # The front desk receives everything. Each specialist desk is a separate e2a
 # agent with its own inbox, so a customer replying to a specialist reaches that
@@ -65,7 +70,7 @@ async def lifespan(_: FastAPI):
     after the crew has already run and the customer is waiting. Better to
     refuse to start.
     """
-    existing = {a.email.lower() for a in e2a.agents.list()}
+    existing = {a.email.lower() async for a in e2a.agents.list()}
     configured = {FRONT_DESK, *DESKS.values()}
     missing = sorted(addr for addr in configured if addr.lower() not in existing)
     if missing:
@@ -76,6 +81,7 @@ async def lifespan(_: FastAPI):
         )
     log.info("escalation desk ready: front=%s desks=%s", FRONT_DESK, ", ".join(sorted(DESKS)))
     yield
+    await e2a.aclose()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -95,7 +101,7 @@ def owning_desk(email) -> str | None:
     return None
 
 
-def run_crew(email) -> tuple[Triage, str]:
+async def run_crew(email) -> tuple[Triage, str]:
     """Run the crew over one email. Returns (triage result, reply body).
 
     The body is passed as an interpolation *value*, never as part of a template,
@@ -108,7 +114,7 @@ def run_crew(email) -> tuple[Triage, str]:
     if email.text_truncated:
         body += "\n\n[e2a truncated this message body]"
 
-    crew.kickoff(
+    await crew.kickoff_async(
         inputs={
             "sender": email.from_ or "unknown sender",
             "subject": email.subject or "(no subject)",
@@ -159,20 +165,20 @@ async def inbound(request: Request) -> dict[str, object]:
         return {"status": "duplicate", "event_id": event.id}
     _seen.add(event.id)
 
-    email = e2a.inbound.from_event(event)
+    email = await e2a.inbound.from_event(event)
 
     already_owned = owning_desk(email)
     if already_owned is None and (email.inbox or "").lower() != FRONT_DESK.lower():
         # Mail to an inbox this app does not run. Do nothing rather than guess.
         return {"status": "not_my_inbox", "inbox": email.inbox}
 
-    triage, reply_body = run_crew(email)
+    triage, reply_body = await run_crew(email)
 
     # A flagged message is not auto-answered. Replying to a manipulation attempt
     # tells the sender their probe landed; a human should see it first. This goes
     # to the security desk as a NEW thread — the customer is not on it.
     if triage.injection_attempt:
-        notice = e2a.messages.send(
+        notice = await e2a.messages.send(
             DESKS["security"],
             {
                 "to": [DESKS["security"]],
@@ -205,13 +211,13 @@ async def inbound(request: Request) -> dict[str, object]:
     if already_owned:
         # The owning desk received this mail, so a plain reply is already sent
         # under the right identity — and it sets In-Reply-To/References properly.
-        result = email.reply({"text": body}, idempotency_key=event.id)
+        result = await email.reply({"text": body}, idempotency_key=event.id)
         mode = "reply"
     else:
         # Cross-identity: the front desk received it, but the answer comes from
         # the specialist. `conversation_id` puts this message in the customer's
         # existing thread even though a different agent is sending it.
-        result = e2a.messages.send(
+        result = await e2a.messages.send(
             DESKS[desk],
             {
                 "to": [email.from_],

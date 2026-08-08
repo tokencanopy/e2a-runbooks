@@ -12,20 +12,32 @@ Then point an e2a webhook (email.received) at POST /webhooks/e2a.
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 
 load_dotenv()  # read .env before anything reads os.environ
 
 from agents import Agent, Runner, function_tool
-from e2a import E2AClient, E2AWebhookSignatureError, construct_event
+from e2a import AsyncE2AClient, E2AWebhookSignatureError, construct_event
 from fastapi import FastAPI, HTTPException, Request
 
 AGENT_EMAIL = os.environ["E2A_AGENT_EMAIL"]
 WEBHOOK_SECRET = os.environ["E2A_WEBHOOK_SECRET"]
 
 # Reads E2A_API_KEY (and E2A_API_URL if you self-host) from the environment.
-e2a = E2AClient()
+#
+# The ASYNC client, because the webhook handler is `async def`. The sync
+# E2AClient raises RuntimeError when called from inside a running event loop, so
+# a server pairing the two fails on its first inbound email. Every e2a call
+# below is awaited — including the ones inside tools.
+e2a = AsyncE2AClient()
+
+# The async client owns a connection pool; close it on shutdown.
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    yield
+    await e2a.aclose()
 
 # Who the receptionist can hand off to. Edit for your organisation — these are
 # deliberately non-routable example addresses.
@@ -35,7 +47,7 @@ DESKS: dict[str, str] = {
     "engineering": "engineering@your-domain.example",
 }
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 # Webhook delivery is at-least-once, so the same event can arrive twice. Replying
 # or forwarding twice is the visible failure. This in-memory set is fine for one
@@ -48,7 +60,7 @@ _seen: set[str] = set()
 _current: dict[str, object] = {}
 
 
-def _forward_to_desk(desk: str, note: str) -> str:
+async def _forward_to_desk(desk: str, note: str) -> str:
     """Forward the current email to an internal desk when it needs a human.
 
     Args:
@@ -65,11 +77,11 @@ def _forward_to_desk(desk: str, note: str) -> str:
 
     # `forward` requires `to` and `text`. Forwarding preserves the original
     # message; the note is the receptionist's own handoff context.
-    result = email.forward({"to": [address], "text": note})
+    result = await email.forward({"to": [address], "text": note})
     return f"forwarded to {desk} ({address}), status {result.status}"
 
 
-def _label_message(labels: list[str]) -> str:
+async def _label_message(labels: list[str]) -> str:
     """Label the current email so it can be found and reported on later.
 
     Args:
@@ -79,7 +91,7 @@ def _label_message(labels: list[str]) -> str:
     if email is None:
         return "no message is currently being handled"
 
-    e2a.messages.update_labels(AGENT_EMAIL, email.id, {"add_labels": labels})
+    await e2a.messages.update_labels(AGENT_EMAIL, email.id, {"add_labels": labels})
     return f"labelled {', '.join(labels)}"
 
 
@@ -158,15 +170,17 @@ async def inbound(request: Request) -> dict[str, object]:
         return {"status": "duplicate", "event_id": event.id}
     _seen.add(event.id)
 
-    email = e2a.inbound.from_event(event)
+    email = await e2a.inbound.from_event(event)
     _current["email"] = email
     try:
-        result = Runner.run_sync(agent, build_prompt(email))
+        # `Runner.run_sync` raises when an event loop is already running, which
+        # it always is inside an async handler. Use the coroutine form.
+        result = await Runner.run(agent, build_prompt(email))
     finally:
         _current.pop("email", None)
 
     # `email.reply` keeps the thread intact; a fresh send would start a new one.
-    email.reply({"text": result.final_output})
+    await email.reply({"text": result.final_output})
 
     return {
         "status": "handled",

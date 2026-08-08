@@ -23,7 +23,9 @@ from dotenv import load_dotenv
 
 load_dotenv()  # read .env before anything reads os.environ
 
-from e2a import E2AClient, E2AWebhookSignatureError, construct_event
+from contextlib import asynccontextmanager
+
+from e2a import AsyncE2AClient, E2AWebhookSignatureError, construct_event
 from fastapi import FastAPI, HTTPException, Request
 
 from secretary import SecretaryDecision, secretary
@@ -52,9 +54,21 @@ MAX_HISTORY = 10
 MAX_BODY_CHARS = 4_000
 
 # Reads E2A_API_KEY (and E2A_API_URL if you self-host) from the environment.
-e2a = E2AClient()
+#
+# The ASYNC client, because the webhook handler is `async def`. The sync
+# E2AClient raises RuntimeError when called from inside a running event loop —
+# a server that pairs the two fails on its first inbound email, not later under
+# load. Every e2a call below is therefore awaited.
+e2a = AsyncE2AClient()
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    yield
+    await e2a.aclose()
+
+
+app = FastAPI(lifespan=lifespan)
 
 # Webhook delivery is at-least-once. Replying twice to one email is bad here in a
 # specific way: the second reply proposes times again and looks like the agent
@@ -63,7 +77,7 @@ app = FastAPI()
 _seen: set[str] = set()
 
 
-def build_transcript(conversation_id: str, current_message_id: str) -> tuple[str, int]:
+async def build_transcript(conversation_id: str, current_message_id: str) -> tuple[str, int]:
     """Rebuild the negotiation so far from the e2a conversation.
 
     Returns (transcript, messages_fetched).
@@ -75,7 +89,7 @@ def build_transcript(conversation_id: str, current_message_id: str) -> tuple[str
     "Thursday works" only exists in a body — so this pays for them, bounded by
     MAX_HISTORY.
     """
-    conversation = e2a.conversations.get(AGENT_EMAIL, conversation_id)
+    conversation = await e2a.conversations.get(AGENT_EMAIL, conversation_id)
 
     # Do not rely on server ordering; sort explicitly. Out-of-order history would
     # make the agent think a rejected slot was proposed after it was rejected.
@@ -89,7 +103,7 @@ def build_transcript(conversation_id: str, current_message_id: str) -> tuple[str
     fetched = 0
     for summary in history:
         try:
-            full = e2a.messages.get(AGENT_EMAIL, summary.id)
+            full = await e2a.messages.get(AGENT_EMAIL, summary.id)
         except Exception:
             # A body we cannot fetch is better acknowledged than silently
             # dropped — a gap the agent knows about beats one it doesn't.
@@ -186,9 +200,9 @@ async def inbound(request: Request) -> dict[str, object]:
         return {"status": "duplicate", "event_id": event.id}
     _seen.add(event.id)
 
-    email = e2a.inbound.from_event(event)
+    email = await e2a.inbound.from_event(event)
 
-    transcript, fetched = build_transcript(email.conversation_id, email.id)
+    transcript, fetched = await build_transcript(email.conversation_id, email.id)
 
     result = await secretary.run(
         build_prompt(email, transcript),
@@ -206,7 +220,7 @@ async def inbound(request: Request) -> dict[str, object]:
     # claimed in `_seen`, so the redelivery will be treated as a duplicate: this
     # thread stalls until someone looks. That is the safe direction.)
     if decision.injection_attempt:
-        e2a.messages.send(
+        await e2a.messages.send(
             AGENT_EMAIL,
             {
                 "to": [HANDOFF_EMAIL],
@@ -224,7 +238,7 @@ async def inbound(request: Request) -> dict[str, object]:
         )
 
     if decision.state == "needs_human":
-        e2a.messages.send(
+        await e2a.messages.send(
             AGENT_EMAIL,
             {
                 "to": [HANDOFF_EMAIL],
@@ -239,7 +253,7 @@ async def inbound(request: Request) -> dict[str, object]:
             idempotency_key=f"{event.id}:handoff",
         )
 
-    send = email.reply({"text": format_reply(decision)}, idempotency_key=event.id)
+    send = await email.reply({"text": format_reply(decision)}, idempotency_key=event.id)
 
     return {
         "status": "replied",
