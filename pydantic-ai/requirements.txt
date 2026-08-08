@@ -1,0 +1,12 @@
+# pydantic-ai-slim keeps the install to the providers you actually use, rather
+# than pulling in every one. Swap the extra for your model:
+#   [anthropic]  -> anthropic:…      [openai] -> openai:…      [google] -> google:…
+# The all-in-one `pydantic-ai` package works too and needs no extras.
+#
+# NB: the provider prefix is `google:` (and `google-cloud:` for Vertex). The
+# older `google-gla:` prefix is gone in 2.x and raises "Unknown provider".
+pydantic-ai-slim[anthropic]==2.26.0
+e2a==5.6.0
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+python-dotenv==1.2.2

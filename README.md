@@ -13,12 +13,11 @@ e2a gives an AI agent a **real email address**: verified inbound mail over signe
 | [`claude-agent-sdk/`](./claude-agent-sdk) | **AI SRE** — triages monitoring alerts, recommends, never acts | [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk) — the ops/coding agent SDK | Verification-as-gate, `reviews` (account-scoped) |
 | [`langchain/`](./langchain) | **Contract review** — reads an emailed PDF, replies with a structured risk summary | [LangChain v1](https://docs.langchain.com) — document work is its origin | `attachments`, `get_attachment` |
 | [`crewai/`](./crewai) | **Escalation desk** — a crew triages, investigates, and answers *from the specialist's own inbox* | [CrewAI](https://docs.crewai.com) — multi-agent crews, so multiple identities make sense | Multiple agents, cross-identity `conversation_id` |
+| [`pydantic-ai/`](./pydantic-ai) | **Scheduling secretary** — negotiates a meeting time over many round-trips, storing nothing | [Pydantic AI](https://ai.pydantic.dev) — typed outputs, and no session store, so the thread really is the state | `conversations`, `messages.get` |
 
 The `mastra/` runbook is the fully-worked reference — same core, plus tests, structured tool errors, and the outbound approval path. The others are deliberately minimal.
 
 Each pairs a use case with the framework that suits it, and each exercises an e2a surface the others don't. Each lives in its own directory with its own dependency manifest and pinned SDK versions, so one framework's churn never breaks another.
-
-Planned: a **scheduling secretary** on [Pydantic AI](https://ai.pydantic.dev), reconstructing a multi-turn negotiation from `conversations` rather than from local state.
 
 ## Using one
 
@@ -46,6 +45,7 @@ Reading an API reference tells you which calls exist. It doesn't tell you the th
 - **Webhook delivery is at-least-once.** Claim the event id *before* running the agent — the failure being prevented is a second reply in someone's inbox.
 - **Inbound email is untrusted input.** Pass the authentication verdict to the model and instruct it to treat message bodies as data, not instructions. An agent with an inbox and no provenance is a prompt-injection surface.
 - **Gate sending in infrastructure, not in a prompt.** e2a can hold outbound mail for human approval, so "wait for a human" is not something the model can be talked out of.
+- **A conversation gives you the skeleton, not the content.** `conversations.get()` returns message summaries without body text; rebuilding what was actually said costs one fetch per message. An agent that needs history has to pay for it — see [`pydantic-ai/`](./pydantic-ai).
 
 ## Conventions
 
