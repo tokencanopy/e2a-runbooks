@@ -18,6 +18,34 @@ e2a gives an AI agent a **real email address**: verified inbound mail over signe
 | [`pydantic-ai/`](./pydantic-ai) | **Scheduling secretary** — negotiates a meeting time over many round-trips, storing nothing | [Pydantic AI](https://ai.pydantic.dev) — typed outputs, and no session store, so the thread really is the state | `conversations`, `messages.get` |
 | [`langgraph/`](./langgraph) | **Supplier follow-up desk** — *starts* the conversation: chases open purchase orders, reads the replies, escalates slips | [LangGraph](https://docs.langchain.com/oss/python/langgraph/overview) — a declared state machine, which is what a multi-day chase is | `contacts.outreach` (the mailbox as the queue) |
 
+## Find an example by use case
+
+Start with the job you want the agent to do, then choose the framework whose shape fits it:
+
+| What you want to build | Start here | What the example demonstrates |
+| --- | --- | --- |
+| Support or escalation agent | [`mastra/`](./mastra) or [`crewai/`](./crewai) | Threaded support replies, human approval, specialist routing, and multiple agent identities |
+| AI receptionist | [`openai-agents/`](./openai-agents) | Handoffs from a front desk to the right human desk |
+| Scheduling agent | [`pydantic-ai/`](./pydantic-ai) | Multi-round-trip scheduling where the email conversation is the state |
+| Ecommerce or order-support agent | — | Not yet represented; this is the next high-value runbook to add |
+| Procurement agent | [`langgraph/`](./langgraph) | Outbound supplier follow-up, state transitions, and escalation |
+| Contract or document-review agent | [`langchain/`](./langchain) | Authenticated attachments, PDF extraction, and structured results |
+| SRE or alert-triage agent | [`claude-agent-sdk/`](./claude-agent-sdk) | Sender verification, least privilege, and mandatory human approval |
+
+This table is deliberately use-case-first: it is also the index to use when linking from a tutorial, framework example, directory listing, or AI answer. If you are looking for an ecommerce example, open an issue or contribute one following the conventions below.
+
+## Distribution-ready links
+
+Use the smallest relevant link when sharing the project:
+
+- **All examples:** <https://github.com/tokencanopy/e2a-runbooks>
+- **Support:** <https://github.com/tokencanopy/e2a-runbooks/tree/main/mastra>
+- **Receptionist:** <https://github.com/tokencanopy/e2a-runbooks/tree/main/openai-agents>
+- **Scheduling:** <https://github.com/tokencanopy/e2a-runbooks/tree/main/pydantic-ai>
+- **Procurement:** <https://github.com/tokencanopy/e2a-runbooks/tree/main/langgraph>
+
+Each runbook is intentionally a runnable starting point, not a hosted product. Link to the specific directory when demonstrating a framework integration; link to the repository root when sharing the collection.
+
 The `mastra/` runbook is the fully-worked reference — same core, plus tests, structured tool errors, and the outbound approval path. The others are deliberately minimal.
 
 Six of the seven wait for mail. [`langgraph/`](./langgraph) is the outbound one, and it is the only one that has to answer a question no inbound email will ever arrive to ask: *who is overdue for a follow-up, and who already answered?*
