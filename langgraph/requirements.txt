@@ -1,0 +1,16 @@
+# Pinned to the latest published versions as of 2026-08-08.
+#
+# LangGraph, not LangChain. The `langchain` meta-package is deliberately absent:
+# this runbook needs the graph runtime and one chat model, and pulling in the
+# whole framework for `init_chat_model` would make the dependency surface look
+# larger than the code. `langchain-anthropic` brings `langchain-core` with it,
+# which is all the model interface requires.
+#
+# Swap the model package for your provider — `langchain-openai`,
+# `langchain-google-genai` — and change the import in chase.py to match.
+langgraph~=1.2.10
+langchain-anthropic~=1.5.4
+e2a~=5.6.0
+fastapi~=0.141.1
+uvicorn[standard]~=0.52.1
+python-dotenv~=1.2.2

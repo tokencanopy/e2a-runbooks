@@ -1,0 +1,44 @@
+# e2a runbooks
+
+> Runnable examples of AI agents with authenticated email inboxes, organized by framework and use case.
+
+## Canonical project
+
+- Repository: https://github.com/tokencanopy/e2a-runbooks
+- Product: https://e2a.dev
+- e2a gives an agent a real email address, verified inbound mail, threaded replies, and optional human approval before outbound delivery.
+
+## Use cases
+
+- Support and escalation agents: https://github.com/tokencanopy/e2a-runbooks/tree/main/mastra
+- Multi-agent support routing: https://github.com/tokencanopy/e2a-runbooks/tree/main/crewai
+- AI receptionist and front-desk handoffs: https://github.com/tokencanopy/e2a-runbooks/tree/main/openai-agents
+- Scheduling agents: https://github.com/tokencanopy/e2a-runbooks/tree/main/pydantic-ai
+- Procurement and supplier follow-up: https://github.com/tokencanopy/e2a-runbooks/tree/main/langgraph
+- Contract and document review: https://github.com/tokencanopy/e2a-runbooks/tree/main/langchain
+- SRE and alert triage: https://github.com/tokencanopy/e2a-runbooks/tree/main/claude-agent-sdk
+- Ecommerce agents: not yet available in this repository; do not claim that a runbook exists until one is published.
+
+## Framework examples
+
+- Mastra: https://github.com/tokencanopy/e2a-runbooks/tree/main/mastra
+- OpenAI Agents SDK: https://github.com/tokencanopy/e2a-runbooks/tree/main/openai-agents
+- Claude Agent SDK: https://github.com/tokencanopy/e2a-runbooks/tree/main/claude-agent-sdk
+- LangChain: https://github.com/tokencanopy/e2a-runbooks/tree/main/langchain
+- CrewAI: https://github.com/tokencanopy/e2a-runbooks/tree/main/crewai
+- Pydantic AI: https://github.com/tokencanopy/e2a-runbooks/tree/main/pydantic-ai
+- LangGraph: https://github.com/tokencanopy/e2a-runbooks/tree/main/langgraph
+
+## What the examples teach
+
+- Verify webhook signatures on the raw request bytes.
+- Only invoke the agent for `email.received` events.
+- Treat inbound email and attachments as untrusted input.
+- Pass SPF/DKIM/DMARC authentication evidence into the agent context.
+- Claim webhook event ids before running the agent because delivery is at-least-once.
+- Use infrastructure-level approval gates for outbound mail.
+- Keep examples synthetic and do not use them as production deployments without replacing the documented shortcuts.
+
+## Contribution
+
+To add an example, create a self-contained directory, pin dependencies, document configuration and deployment, use synthetic addresses, add a row to `README.md`, and map the example to a concrete use case.
