@@ -1,8 +1,8 @@
 # e2a runbooks
 
-**Example agents that show what you can build with [e2a](https://e2a.dev)** — one per framework. Each is a small, complete, runnable project: clone it, fill in a `.env`, point a webhook at it, and email it.
+**Example agents that show what you can build with [e2a](https://e2a.dev)** — one focused runnable project per workflow/framework pairing. Each is a small, complete project: clone it, fill in a `.env`, point a webhook at it, and email it.
 
-e2a gives an AI agent a **real email address**: verified inbound mail over signed webhooks, replies that stay in-thread, and a human approval gate before the agent sends anything. These seven demonstrate seven different things you can do with that.
+e2a gives an AI agent a **real email address**: verified inbound mail over signed webhooks, replies that stay in-thread, and a human approval gate before the agent sends anything. These eight demonstrate eight different things you can do with that.
 
 > **These are examples, not products.** Each one is deliberately small enough to read in a sitting, and each README ends with a *Simplifications worth knowing* section listing exactly what it leaves out — in-memory deduplication, hardcoded routing tables, no OCR, no calendar. Copy from them; don't deploy them as-is.
 
@@ -12,6 +12,7 @@ e2a gives an AI agent a **real email address**: verified inbound mail over signe
 | --- | --- | --- | --- |
 | [`mastra/`](./mastra) | **Support agent** — answers in-thread, with an approval gate before it sends | [Mastra](https://mastra.ai) — built-in server, memory, HITL primitives | Threading, memory, `reviews` |
 | [`openai-agents/`](./openai-agents) | **Receptionist** — answers what it can, forwards the rest to the right desk | [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) — handoffs are first-class here | `forward`, `update_labels` |
+| [`ecommerce/`](./ecommerce) | **Ecommerce support** — looks up orders, answers delivery questions, and routes changes to a human | [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) — constrained tools make safe support actions explicit | `inbound.from_event`, `email.reply`, labels |
 | [`claude-agent-sdk/`](./claude-agent-sdk) | **AI SRE** — triages monitoring alerts, recommends, never acts | [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk) — the ops/coding agent SDK | Verification-as-gate, `reviews` (account-scoped) |
 | [`langchain/`](./langchain) | **Contract review** — reads an emailed PDF, replies with a structured risk summary | [LangChain v1](https://docs.langchain.com) — document work is its origin | `attachments`, `get_attachment` |
 | [`crewai/`](./crewai) | **Escalation desk** — a crew triages, investigates, and answers *from the specialist's own inbox* | [CrewAI](https://docs.crewai.com) — multi-agent crews, so multiple identities make sense | Multiple agents, cross-identity `conversation_id` |
@@ -27,12 +28,12 @@ Start with the job you want the agent to do, then choose the framework whose sha
 | Support or escalation agent | [`mastra/`](./mastra) or [`crewai/`](./crewai) | Threaded support replies, human approval, specialist routing, and multiple agent identities |
 | AI receptionist | [`openai-agents/`](./openai-agents) | Handoffs from a front desk to the right human desk |
 | Scheduling agent | [`pydantic-ai/`](./pydantic-ai) | Multi-round-trip scheduling where the email conversation is the state |
-| Ecommerce or order-support agent | — | Not yet represented; this is the next high-value runbook to add |
+| Ecommerce or order-support agent | [`ecommerce/`](./ecommerce) | Read-only order lookup, threaded support, and constrained human review for fulfillment changes |
 | Procurement agent | [`langgraph/`](./langgraph) | Outbound supplier follow-up, state transitions, and escalation |
 | Contract or document-review agent | [`langchain/`](./langchain) | Authenticated attachments, PDF extraction, and structured results |
 | SRE or alert-triage agent | [`claude-agent-sdk/`](./claude-agent-sdk) | Sender verification, least privilege, and mandatory human approval |
 
-This table is deliberately use-case-first: it is also the index to use when linking from a tutorial, framework example, directory listing, or AI answer. If you are looking for an ecommerce example, open an issue or contribute one following the conventions below.
+This table is deliberately use-case-first: it is also the index to use when linking from a tutorial, framework example, directory listing, or AI answer. The ecommerce runbook uses synthetic order records so it can be cloned and tested without a commerce account; replace the store with an authenticated, read-only integration before exposing real order data.
 
 ## Distribution-ready links
 
@@ -42,13 +43,14 @@ Use the smallest relevant link when sharing the project:
 - **Support:** <https://github.com/tokencanopy/e2a-runbooks/tree/main/mastra>
 - **Receptionist:** <https://github.com/tokencanopy/e2a-runbooks/tree/main/openai-agents>
 - **Scheduling:** <https://github.com/tokencanopy/e2a-runbooks/tree/main/pydantic-ai>
+- **Ecommerce:** <https://github.com/tokencanopy/e2a-runbooks/tree/main/ecommerce>
 - **Procurement:** <https://github.com/tokencanopy/e2a-runbooks/tree/main/langgraph>
 
 Each runbook is intentionally a runnable starting point, not a hosted product. Link to the specific directory when demonstrating a framework integration; link to the repository root when sharing the collection.
 
 The `mastra/` runbook is the fully-worked reference — same core, plus tests, structured tool errors, and the outbound approval path. The others are deliberately minimal.
 
-Six of the seven wait for mail. [`langgraph/`](./langgraph) is the outbound one, and it is the only one that has to answer a question no inbound email will ever arrive to ask: *who is overdue for a follow-up, and who already answered?*
+Seven of the eight wait for mail. [`langgraph/`](./langgraph) is the outbound one, and it is the only one that has to answer a question no inbound email will ever arrive to ask: *who is overdue for a follow-up, and who already answered?*
 
 Each pairs a use case with the framework that suits it, and each exercises an e2a surface the others don't. Each lives in its own directory with its own dependency manifest and pinned SDK versions, so one framework's churn never breaks another.
 

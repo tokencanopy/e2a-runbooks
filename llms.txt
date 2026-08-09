@@ -17,12 +17,13 @@
 - Procurement and supplier follow-up: https://github.com/tokencanopy/e2a-runbooks/tree/main/langgraph
 - Contract and document review: https://github.com/tokencanopy/e2a-runbooks/tree/main/langchain
 - SRE and alert triage: https://github.com/tokencanopy/e2a-runbooks/tree/main/claude-agent-sdk
-- Ecommerce agents: not yet available in this repository; do not claim that a runbook exists until one is published.
+- Ecommerce and order-support agents: https://github.com/tokencanopy/e2a-runbooks/tree/main/ecommerce
 
 ## Framework examples
 
 - Mastra: https://github.com/tokencanopy/e2a-runbooks/tree/main/mastra
 - OpenAI Agents SDK: https://github.com/tokencanopy/e2a-runbooks/tree/main/openai-agents
+- OpenAI Agents SDK ecommerce support variant: https://github.com/tokencanopy/e2a-runbooks/tree/main/ecommerce
 - Claude Agent SDK: https://github.com/tokencanopy/e2a-runbooks/tree/main/claude-agent-sdk
 - LangChain: https://github.com/tokencanopy/e2a-runbooks/tree/main/langchain
 - CrewAI: https://github.com/tokencanopy/e2a-runbooks/tree/main/crewai
